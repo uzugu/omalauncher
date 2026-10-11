@@ -31,31 +31,41 @@ import dev.omalauncher.hermes.HermesConnection
 
 @Composable
 fun HermesSettingsScreen(connection: HermesConnection, onDismiss: () -> Unit, onChat: () -> Unit) {
+    OverlayPanel("Hermes connection", onDismiss) {
+        Column(Modifier.weight(1f).imePadding().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            HermesConnectionForm(connection)
+            if (connection.configured) {
+                BracketAction("open Hermes chat", Palette.accent, onChat)
+                BracketAction(if (connection.selected) "use local agents in the bar" else "use Hermes in the bar", Palette.muted) { connection.choose(!connection.selected) }
+            }
+        }
+    }
+}
+
+/** Shared by the first-run welcome screen and connection settings. */
+@Composable
+internal fun HermesConnectionForm(connection: HermesConnection) {
     val network = rememberHermesNetworkAccess()
     var url by remember { mutableStateOf(connection.endpoint) }
     var key by remember { mutableStateOf("") }
     var validation by remember { mutableStateOf<String?>(null) }
-    OverlayPanel("Hermes connection", onDismiss) {
-        Column(Modifier.weight(1f).imePadding().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            BasicText("Connect to the Hermes gateway on your NAS. Use Tailscale on your phone when away from home.", style = Mono.copy(color = Palette.muted))
-            BasicText("gateway URL", style = Mono.copy(color = Palette.accent))
-            HermesField(url, { url = it }, "http://your-nas:8642")
-            BasicText("API key", style = Mono.copy(color = Palette.accent))
-            HermesField(key, { key = it }, if (connection.configured) "saved · leave blank to keep" else "API_SERVER_KEY", password = true)
-            BasicText("The API key is stored encrypted on this phone. The gateway runs Hermes with your NAS tools and configuration.", style = Mono.copy(color = Palette.muted, fontSize = TextSize.Small))
-            (validation ?: connection.error)?.let { BasicText(it, style = Mono.copy(color = Palette.red)) }
-            BasicText(connection.status, style = Mono.copy(color = Palette.muted))
-            if (!connection.working) {
-                BracketAction("save connection", Palette.accent) {
-                    try { connection.configure(url, key); key = ""; validation = null; url = connection.endpoint }
-                    catch (e: Exception) { validation = e.message ?: "Could not save connection" }
-                }
-            } else BasicText("Finish or stop the active request before changing the connection.", style = Mono.copy(color = Palette.muted))
-            if (connection.configured) {
-                BracketAction(if (connection.testing) "testing…" else "test connection", Palette.accent) { network { connection.test() } }
-                BracketAction("open Hermes chat", Palette.accent, onChat)
-                BracketAction(if (connection.selected) "use local agents in the bar" else "use Hermes in the bar", Palette.muted) { connection.choose(!connection.selected) }
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        BasicText("Connect to the Hermes gateway on your NAS. Use Tailscale on your phone when away from home.", style = Mono.copy(color = Palette.muted))
+        BasicText("gateway URL", style = Mono.copy(color = Palette.accent))
+        HermesField(url, { url = it }, "http://NAS-IP:8642")
+        BasicText("API key", style = Mono.copy(color = Palette.accent))
+        HermesField(key, { key = it }, if (connection.configured) "saved · leave blank to keep" else "API_SERVER_KEY", password = true)
+        BasicText("The API key is stored encrypted on this phone. The gateway runs Hermes with your NAS tools and configuration.", style = Mono.copy(color = Palette.muted, fontSize = TextSize.Small))
+        (validation ?: connection.error)?.let { BasicText(it, style = Mono.copy(color = Palette.red)) }
+        BasicText(connection.status, style = Mono.copy(color = Palette.muted))
+        if (!connection.working) {
+            BracketAction("save connection", Palette.accent) {
+                try { connection.configure(url, key); key = ""; validation = null; url = connection.endpoint }
+                catch (e: Exception) { validation = e.message ?: "Could not save connection" }
             }
+        } else BasicText("Finish or stop the active request before changing the connection.", style = Mono.copy(color = Palette.muted))
+        if (connection.configured) {
+            BracketAction(if (connection.testing) "testing…" else "test connection", Palette.accent) { network { connection.test() } }
         }
     }
 }

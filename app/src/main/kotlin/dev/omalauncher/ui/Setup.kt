@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
@@ -48,6 +49,7 @@ import dev.omalauncher.linux.AGENTS
 import dev.omalauncher.linux.Agent
 import androidx.compose.runtime.rememberCoroutineScope
 import dev.omalauncher.Runtime
+import dev.omalauncher.hermes.HermesConnection
 import dev.omalauncher.linux.LinuxState
 import dev.omalauncher.linux.Stage
 import dev.omalauncher.theme.BundledTheme
@@ -56,7 +58,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
- * The first-run screen: pick a theme and, optionally, set up Linux. Start
+ * The first-run screen: pick a theme, connect remote Hermes, and optionally set up Linux. Start
  * fetches Omarchy's themes, then the home screen opens; a Linux install
  * carries on in the background.
  */
@@ -64,6 +66,7 @@ import kotlinx.coroutines.launch
 internal fun SetupScreen(runtime: Runtime) {
     val themes = runtime.themes
     var linux by rememberSaveable { mutableStateOf(false) }
+    var hermes by rememberSaveable { mutableStateOf(runtime.hermes.selected) }
     // Claude Code first, like Omarchy's default agent; the first picked becomes the launcher's default.
     var picked by rememberSaveable { mutableStateOf(listOf(AGENTS.first().bin)) }
     var started by remember { mutableStateOf(false) }
@@ -79,7 +82,7 @@ internal fun SetupScreen(runtime: Runtime) {
             if (error == null) runtime.finishWelcome()
         }
     }
-    Column(Modifier.fillMaxSize().safeDrawingPadding(), horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(Modifier.fillMaxSize().safeDrawingPadding().imePadding(), horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
             contentAlignment = Alignment.TopCenter,
@@ -91,7 +94,11 @@ internal fun SetupScreen(runtime: Runtime) {
                 if (started) {
                     ThemeDownloadProgress(themes.choices.firstOrNull { it.name == themes.picked }?.title?.lowercase() ?: themes.picked, error, onRetry = ::fetchTheme, onSkip = runtime::finishWelcome)
                 } else {
-                    Welcome(themes, linux, { linux = !linux }, picked) { bin -> picked = if (bin in picked) picked - bin else picked + bin }
+                    Welcome(themes, runtime.hermes, hermes, {
+                        hermes = !hermes
+                        runtime.hermes.choose(hermes)
+                        error = null
+                    }, linux, { linux = !linux }, picked) { bin -> picked = if (bin in picked) picked - bin else picked + bin }
                 }
             }
         }
@@ -99,10 +106,18 @@ internal fun SetupScreen(runtime: Runtime) {
         if (!started) {
             Column(Modifier.widthIn(max = 560.dp).fillMaxWidth().padding(start = Gutter, end = Gutter, top = 12.dp, bottom = 16.dp)) {
                 Appear(3) {
-                    StartButton(linux) {
-                        started = true
-                        if (linux) install(picked)
-                        fetchTheme()
+                    Column {
+                        if (error != null && (!hermes || !runtime.hermes.configured)) BasicText(error!!, Modifier.padding(bottom = 10.dp), style = Mono.copy(color = Palette.red))
+                        StartButton(linux, hermes) {
+                            if (hermes && !runtime.hermes.configured) {
+                                error = "Save your Hermes connection above before starting."
+                                return@StartButton
+                            }
+                            runtime.hermes.choose(hermes)
+                            started = true
+                            if (linux) install(picked)
+                            fetchTheme()
+                        }
                     }
                 }
             }
@@ -125,6 +140,9 @@ private fun Wordmark() {
 @Composable
 private fun Welcome(
     themes: ThemeStore,
+    connection: HermesConnection,
+    hermes: Boolean,
+    onToggleHermes: () -> Unit,
     linux: Boolean,
     onToggleLinux: () -> Unit,
     picked: List<String>,
@@ -137,7 +155,7 @@ private fun Welcome(
             Spacer(Modifier.height(10.dp))
             BasicText(
                 "Omarchy's themes and wallpapers, your Android apps, and home-screen widgets. Arch Linux adds " +
-                    "terminal apps and coding agents, now or later in settings.",
+                    "terminal apps and coding agents. Connect Hermes on your NAS to ask your remote agent from the home screen.",
                 style = Mono.copy(color = Subtle, lineHeight = 20.sp),
             )
         }
@@ -154,6 +172,14 @@ private fun Welcome(
     Spacer(Modifier.height(32.dp))
     Appear(2) {
         Column {
+            Label("remote agent")
+            Spacer(Modifier.height(12.dp))
+            Choice("Hermes on your NAS", "connect over Tailscale or your home network", hermes, onToggleHermes)
+            if (hermes) {
+                Spacer(Modifier.height(16.dp))
+                HermesConnectionForm(connection)
+            }
+            Spacer(Modifier.height(24.dp))
             Label("linux")
             Spacer(Modifier.height(12.dp))
             Choice("also set up Arch Linux", "terminal apps, agents, pacman · ~1 GB", linux, onToggleLinux)
@@ -187,10 +213,16 @@ internal fun AgentPicker(
 @Composable
 private fun StartButton(
     linux: Boolean,
+    hermes: Boolean,
     onStart: () -> Unit,
 ) {
     Column {
-        PrimaryButton(if (linux) "start and set up linux" else "start", onStart)
+        PrimaryButton(when {
+            linux && hermes -> "start with Hermes and set up linux"
+            hermes -> "start with Hermes"
+            linux -> "start and set up linux"
+            else -> "start"
+        }, onStart)
         BasicText(
             if (linux) {
                 "Linux downloads about 1 GB, so Wi-Fi is best. It installs in the background in 10 to 20 minutes; " +

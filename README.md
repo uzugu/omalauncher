@@ -7,10 +7,13 @@ connects directly to the Hermes gateway API and opens a native chat panel with
 streaming replies, tool progress, permission requests, and a Stop action. Linux
 on the phone is optional. The NAS runs the agent and stores the conversation.
 
-Install the fork APK, connect the phone to your NAS through Tailscale or your
-home network, then open **settings → Hermes · NAS**. Enter the gateway URL
+Install the fork APK and connect the phone to your NAS through Tailscale or your
+home network. In the initial configuration, select **Hermes on your NAS**.
+Enter the gateway URL
 (typically `http://YOUR-TAILSCALE-IP:8642`) and its `API_SERVER_KEY`, save, and
-test the connection. Select **Hermes · NAS** in the prompt bar's agent picker.
+test the connection, then choose **start with Hermes**. The same connection
+form is available later under **settings → Hermes · NAS**, and the prompt
+bar's agent picker includes **Hermes · NAS**.
 The API key is encrypted with Android Keystore and excluded from backups.
 
 The fork installs as **Omalauncher Hermes**, with application ID

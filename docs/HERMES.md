@@ -12,9 +12,11 @@ require Arch Linux on the phone.
    The usual port is **8642**. Existing installations can check
    `/health` and authenticated `/v1/capabilities`.
 2. Connect the phone to the same LAN or Tailscale network.
-3. Install **Omalauncher Hermes**, open settings → **Hermes · NAS**, and enter
-   `http://YOUR-TAILSCALE-IP:8642` and the gateway's `API_SERVER_KEY`. Save and
-   select **test connection**. The dashboard login and dashboard port are
+3. Install **Omalauncher Hermes**. During initial configuration, select
+   **Hermes on your NAS** and enter `http://YOUR-TAILSCALE-IP:8642` and the
+   gateway's `API_SERVER_KEY`. Save, select **test connection**, then choose
+   **start with Hermes**. Linux is optional. The connection form is also
+   available later under settings → **Hermes · NAS**. The dashboard login and dashboard port are
    separate from the gateway API key and port.
    On Android 17 or newer, allow the local network permission when prompted.
 4. Select **Hermes · NAS** in the prompt bar. Enter a prompt and tap **ask**,
