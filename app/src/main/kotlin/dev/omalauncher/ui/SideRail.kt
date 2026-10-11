@@ -144,7 +144,7 @@ private fun PromptRail(
     val linuxState by runtime.bootstrap.state.collectAsState()
     val agent = runtime.agents.default
     // The longest that fits the rail: a letter takes a whole line.
-    val hints = listOfNotNull(agent?.takeIf { linuxState == LinuxState.Installed }?.let { "open an app or ask ${it.bin}" }, "open an app", "apps")
+    val hints = listOfNotNull(if (runtime.hermes.selected) "open an app or ask Hermes" else agent?.takeIf { linuxState == LinuxState.Installed }?.let { "open an app or ask ${it.bin}" }, "open an app", "apps")
     val style = Mono.copy(fontSize = TextSize.Item, color = Palette.muted)
     Column(
         Modifier

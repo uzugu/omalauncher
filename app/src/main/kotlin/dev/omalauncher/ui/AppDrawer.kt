@@ -403,6 +403,7 @@ private fun AskRow(
     val agent = runtime.agents.default
     val label =
         when {
+            runtime.hermes.selected -> "ask Hermes: " + query.trim().replace('\n', ' ')
             !linux -> "ask an agent · install linux"
             agent == null -> "ask an agent · install one"
             else -> "ask ${agent.bin}: " + query.trim().replace('\n', ' ')

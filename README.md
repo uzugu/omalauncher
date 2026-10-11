@@ -1,5 +1,24 @@
 # Omalauncher
 
+## Hermes NAS fork
+
+This fork adds **Hermes as a remote agent in the home screen prompt bar**. It
+connects directly to the Hermes gateway API and opens a native chat panel with
+streaming replies, tool progress, permission requests, and a Stop action. Linux
+on the phone is optional. The NAS runs the agent and stores the conversation.
+
+Install the fork APK, connect the phone to your NAS through Tailscale or your
+home network, then open **settings → Hermes · NAS**. Enter the gateway URL
+(typically `http://YOUR-TAILSCALE-IP:8642`) and its `API_SERVER_KEY`, save, and
+test the connection. Select **Hermes · NAS** in the prompt bar's agent picker.
+The API key is encrypted with Android Keystore and excluded from backups.
+
+The fork installs as **Omalauncher Hermes**, with application ID
+`dev.omalauncher.hermes`, alongside the original launcher. For setup, connection
+recovery, and testing, see [docs/HERMES.md](docs/HERMES.md).
+
+The original project's documentation follows.
+
 An Android home screen with the look of [Omarchy](https://omarchy.org), and an
 optional Arch Linux ARM system next to your phone apps. Omalauncher runs the
 system under proot, without root, and is its Wayland compositor: every Linux

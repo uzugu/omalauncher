@@ -38,6 +38,7 @@ fun SettingsScreen(
     onStore: () -> Unit,
     onLinux: () -> Unit,
     onLicenses: () -> Unit,
+    onHermes: () -> Unit,
 ) {
     val context = LocalContext.current
     val linux by runtime.bootstrap.state.collectAsState()
@@ -54,6 +55,7 @@ fun SettingsScreen(
         val rows =
             listOf(
                 Triple("style", runtime.themes.current?.title ?: "theme, background, home screen", onStyle),
+                Triple("Hermes · NAS", if (runtime.hermes.configured) runtime.hermes.endpoint else "connect to your remote Hermes agent", onHermes),
                 Triple("linux", linuxStatus, onLinux),
                 if (installed) {
                     Triple("coding agents", runtime.agents.default?.let { "default: ${it.name}" } ?: "install Claude Code, OpenCode, …", onAgents)

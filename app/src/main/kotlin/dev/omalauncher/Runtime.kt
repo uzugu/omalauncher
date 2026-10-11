@@ -120,6 +120,8 @@ class Runtime(
 
     private val prefs = context.getSharedPreferences("launcher", Context.MODE_PRIVATE)
 
+    val hermes = dev.omalauncher.hermes.HermesConnection(context)
+
     /**
      * The first-run screen is done: from then on the home screen shows, with
      * or without Linux. Installs from before Linux was optional count as done.

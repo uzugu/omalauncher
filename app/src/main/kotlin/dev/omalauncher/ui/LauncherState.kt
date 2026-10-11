@@ -24,6 +24,8 @@ class LauncherState {
     /** The community themes, opened straight from the home menu's theme strip. */
     var themeBrowserOpen by mutableStateOf(false)
     var agentsOpen by mutableStateOf(false)
+    var hermesOpen by mutableStateOf(false)
+    var hermesSettingsOpen by mutableStateOf(false)
     var storeOpen by mutableStateOf(false)
     var settingsOpen by mutableStateOf(false)
     var packagesOpen by mutableStateOf(false)
@@ -43,13 +45,15 @@ class LauncherState {
 
     /** The open drawer or a full-screen panel hides the home screen; animated widgets stop ticking under it. */
     val homeCovered: Boolean
-        get() = drawer.value > 0.99f || settingsOpen || styleOpen || themeBrowserOpen || agentsOpen || storeOpen || packagesOpen || linuxOpen || licensesOpen || shared != null || sharing != null
+        get() = drawer.value > 0.99f || settingsOpen || styleOpen || themeBrowserOpen || agentsOpen || hermesOpen || hermesSettingsOpen || storeOpen || packagesOpen || linuxOpen || licensesOpen || shared != null || sharing != null
 
     /** Closes every overlay screen (settings and what it opens). */
     fun closeScreens() {
         styleOpen = false
         themeBrowserOpen = false
         agentsOpen = false
+        hermesOpen = false
+        hermesSettingsOpen = false
         storeOpen = false
         packagesOpen = false
         linuxOpen = false

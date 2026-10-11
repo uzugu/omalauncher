@@ -109,6 +109,7 @@ internal fun PromptBar(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    val network = rememberHermesNetworkAccess()
     val speech = remember { Speech(context.applicationContext) }
     DisposableEffect(speech) { onDispose { speech.cancel() } }
     val focus = remember { FocusRequester() }
@@ -133,6 +134,18 @@ internal fun PromptBar(
     fun send(prompt: String) {
         val p = prompt.trim()
         if (p.isEmpty()) return
+        if (runtime.hermes.selected) {
+            network {
+                val submitted = runtime.hermes.send(p)
+                // Keep an unsent prompt when the NAS already has an active request.
+                state.query = if (submitted) "" else p
+                focusManager.clearFocus()
+                keyboard?.hide()
+                state.closeNow()
+                state.hermesOpen = true
+            }
+            return
+        }
         if (!linux) return offerLinux()
         // Looked up now: speech results arrive after the bar may have recomposed.
         val target = runtime.agents.default
@@ -182,7 +195,7 @@ internal fun PromptBar(
         }
 
     fun talk(hold: Boolean) {
-        if (!linux) return offerLinux()
+        if (!linux && !runtime.hermes.selected) return offerLinux()
         if (context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
             listen(hold)
         } else {
@@ -261,7 +274,7 @@ internal fun PromptBar(
                     .padding(start = 2.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                AgentPicker(runtime, onManage = { if (linux) state.agentsOpen = true else offerLinux() })
+                AgentPicker(runtime, onManage = { if (linux) state.agentsOpen = true else offerLinux() }, onHermes = { state.hermesSettingsOpen = true })
                 val shown = if (listening) speech.text else text
                 BasicTextField(
                     value = shown,
@@ -304,6 +317,7 @@ internal fun PromptBar(
                             val hint =
                                 when {
                                     listening -> "listening…"
+                                    runtime.hermes.selected -> "open an app or ask Hermes…"
                                     !linux || agent == null -> "open an app…"
                                     else -> "open an app or ask ${agent.bin}…"
                                 }
@@ -454,6 +468,7 @@ internal fun MicIcon(color: Color) {
 private fun AgentPicker(
     runtime: Runtime,
     onManage: () -> Unit,
+    onHermes: () -> Unit,
 ) {
     val store = runtime.agents
     val agent = store.default
@@ -461,11 +476,11 @@ private fun AgentPicker(
     Box {
         Row(
             Modifier
-                .clickable { if (agent == null) onManage() else open = !open }
+                .clickable { open = !open }
                 .padding(start = 10.dp, end = 8.dp, top = 12.dp, bottom = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            BasicText(agent?.bin ?: "agent", style = Mono.copy(color = if (agent == null) Palette.muted else Palette.accent))
+            BasicText(if (runtime.hermes.selected) "Hermes" else agent?.bin ?: "agent", style = Mono.copy(color = if (agent == null && !runtime.hermes.selected) Palette.muted else Palette.accent))
             Symbol(if (open) Glyph.ChevronUp else Glyph.ChevronDown, Palette.muted, Modifier.padding(start = 4.dp))
         }
         if (open) {
@@ -481,13 +496,20 @@ private fun AgentPicker(
                         .frame(2.dp, Palette.accent, Palette.background)
                         .padding(4.dp),
                 ) {
+                    Box(Modifier.fillMaxWidth().clickable {
+                        open = false
+                        if (runtime.hermes.configured) runtime.hermes.choose(true) else onHermes()
+                    }.padding(horizontal = 10.dp, vertical = 10.dp)) {
+                        BasicText((if (runtime.hermes.selected) "● " else "  ") + "Hermes · NAS", style = Mono.copy(color = Palette.accent))
+                    }
                     for (a in store.installed) {
-                        val current = a.bin == agent?.bin
+                        val current = !runtime.hermes.selected && a.bin == agent?.bin
                         Row(
                             Modifier
                                 .fillMaxWidth()
                                 .clickable {
                                     store.choose(a)
+                                    runtime.hermes.choose(false)
                                     open = false
                                 }.padding(horizontal = 10.dp, vertical = 10.dp),
                             verticalAlignment = Alignment.CenterVertically,
@@ -500,6 +522,9 @@ private fun AgentPicker(
                         }
                     }
                     Box(Modifier.fillMaxWidth().padding(vertical = 4.dp).height(1.dp).background(Palette.border))
+                    Box(Modifier.fillMaxWidth().clickable { open = false; onHermes() }.padding(horizontal = 10.dp, vertical = 10.dp)) {
+                        BasicText("  Hermes connection…", style = Mono.copy(color = Palette.muted))
+                    }
                     Box(
                         Modifier
                             .fillMaxWidth()

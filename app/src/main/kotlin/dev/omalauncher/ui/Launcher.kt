@@ -80,6 +80,8 @@ private fun DesktopScreen(
     }
     BackHandler {
         when {
+            state.hermesSettingsOpen -> state.hermesSettingsOpen = false
+            state.hermesOpen -> state.hermesOpen = false
             // Screens opened from settings return to it; settings itself is last.
             state.shared != null -> state.shared = null
             state.sharing != null -> state.sharing = null
@@ -240,6 +242,7 @@ private fun ThemesOverlay(
             onStore = { state.storeOpen = true },
             onLinux = { state.linuxOpen = true },
             onLicenses = { state.licensesOpen = true },
+            onHermes = { state.hermesSettingsOpen = true },
         )
     }
     if (state.packagesOpen) PackagesScreen(runtime, onDismiss = { state.packagesOpen = false })
@@ -248,6 +251,8 @@ private fun ThemesOverlay(
     if (state.storeOpen) StoreScreen(runtime.widgets, runtime.agents.installed, state.currentPage, runtime.themes.picked, onDismiss = { state.storeOpen = false })
     if (state.licensesOpen) LicensesScreen(onDismiss = { state.licensesOpen = false })
     if (state.linuxOpen) LinuxScreen(runtime, onDismiss = { state.linuxOpen = false })
+    if (state.hermesOpen) HermesScreen(runtime.hermes, onDismiss = { state.hermesOpen = false }, onSettings = { state.hermesSettingsOpen = true })
+    if (state.hermesSettingsOpen) HermesSettingsScreen(runtime.hermes, onDismiss = { state.hermesSettingsOpen = false }, onChat = { state.hermesSettingsOpen = false; state.hermesOpen = true })
     state.shared?.let { link ->
         SharedWidgetScreen(
             runtime.widgets,
