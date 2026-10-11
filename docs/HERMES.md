@@ -12,7 +12,7 @@ require Arch Linux on the phone.
    The usual port is **8642**. Existing installations can check
    `/health` and authenticated `/v1/capabilities`.
 2. Connect the phone to the same LAN or Tailscale network.
-3. Install the fork of **Omalauncher**, open settings → **Hermes · NAS**, and enter
+3. Install **Omalauncher Hermes**, open settings → **Hermes · NAS**, and enter
    `http://YOUR-TAILSCALE-IP:8642` and the gateway's `API_SERVER_KEY`. Save and
    select **test connection**. The dashboard login and dashboard port are
    separate from the gateway API key and port.
@@ -61,14 +61,8 @@ downloads its declared JVM toolchain when needed.
 ```
 
 The APK is `app/build/outputs/apk/debug/app-debug.apk`. Its application ID is
-`dev.omalauncher`; the main activity class remains
-`dev.omalauncher.MainActivity`. It uses the original app identity. Android
-requires the same signing key for an update over an existing installation.
-The preview uses a development key, so installing it in place of the original
-requires uninstalling the original first. Uninstalling can delete its settings
-and phone Linux files; preserve them before removing the app. The first preview
-(`0.4.0-hermes.1`) used `dev.omalauncher.hermes`; remove that separate preview
-yourself if you no longer need it.
+`dev.omalauncher.hermes`; the main activity class remains
+`dev.omalauncher.MainActivity`. It can coexist with the Play Store version.
 
 Transport tests cover URL validation, authentication, redirect refusal,
 idempotency headers, SSE framing, and truncated streams. The optional live

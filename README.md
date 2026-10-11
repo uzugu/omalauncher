@@ -13,12 +13,9 @@ home network, then open **settings → Hermes · NAS**. Enter the gateway URL
 test the connection. Select **Hermes · NAS** in the prompt bar's agent picker.
 The API key is encrypted with Android Keystore and excluded from backups.
 
-The fork installs as **Omalauncher**, with the original application ID
-`dev.omalauncher`. Since the preview uses a different signing key from the
-original, Android requires removing the original before installing it. Removing
-an app can delete its settings and phone Linux files; preserve anything you need
-first. For setup, connection recovery, and testing, see
-[docs/HERMES.md](docs/HERMES.md).
+The fork installs as **Omalauncher Hermes**, with application ID
+`dev.omalauncher.hermes`, alongside the original launcher. For setup, connection
+recovery, and testing, see [docs/HERMES.md](docs/HERMES.md).
 
 The original project's documentation follows.
 

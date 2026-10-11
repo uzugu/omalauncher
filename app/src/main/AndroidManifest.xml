@@ -31,7 +31,7 @@
         android:name=".App"
         android:extractNativeLibs="true"
         android:icon="@mipmap/ic_launcher"
-        android:label="Omalauncher"
+        android:label="Omalauncher Hermes"
         android:allowBackup="false"
         android:theme="@style/Theme.Omalauncher"
         android:usesCleartextTraffic="true">
