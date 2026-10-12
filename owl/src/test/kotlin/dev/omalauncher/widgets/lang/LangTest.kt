@@ -511,6 +511,19 @@ class LangTest {
         assertTrue(compileError("widget {\n Text { text: 1; onTap: volume(50) } }").contains("volume needs owl 4"))
     }
 
+    @Test fun liveVpetUsesNativeSourcesAndVersionedControls() {
+        val p = Compiler.compile("widget {\n meta { owl: 6 }\n source pet = android.vpet\n Button { text: pet.status; onTap: vpet(\"a\") } }")
+        assertTrue(!p.needsLinux)
+        assertEquals("android.vpet", (p.globals[0] as Global.Source).kind)
+        assertTrue(p.commands.any { it.startsWith("read live V-pet") })
+        assertTrue(p.commands.any { it == "send V-pet button a" })
+        val host = TestHost(p)
+        (p.root[0] as WNode.Element).handlers.getValue("onTap").run(Env.root(host), emptyList())
+        assertEquals("vpet a", host.actions.last())
+        assertTrue(compileError("widget {\n meta { owl: 5 }\n source pet = android.vpet\n Text { text: pet.status } }").contains("android.vpet needs owl 6"))
+        assertTrue(compileError("widget {\n meta { owl: 6 }\n Button { text: 1; onTap: vpet(\"reset\") } }").contains("vpet takes"))
+    }
+
     @Test fun sliderAndInput() {
         val p =
             Compiler.compile(

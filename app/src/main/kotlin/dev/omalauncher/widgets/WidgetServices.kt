@@ -40,6 +40,7 @@ import dev.omalauncher.widgets.runtime.Notifications
 import dev.omalauncher.widgets.runtime.Services
 import dev.omalauncher.widgets.runtime.Streams
 import dev.omalauncher.widgets.runtime.Volume
+import dev.omalauncher.widgets.runtime.Vpet
 import dev.omalauncher.widgets.runtime.watchFile
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -82,6 +83,7 @@ class WidgetServices(
     private val media = Media(context)
     private val notifications = Notifications(context, media)
     private val volume = Volume(context)
+    private val vpet = Vpet(context, scope)
 
     /** Opens launcher screens ("style" or "themes", "agents", "drawer"); set by the UI. */
     var launcherAction: ((String) -> Unit)? = null
@@ -116,6 +118,7 @@ class WidgetServices(
             "media" -> media.value()
             "notifications" -> notifications.value()
             "volume" -> volume.value()
+            "vpet" -> vpet.value()
             else -> throw WidgetError("unknown android source $name")
         }
 
@@ -124,6 +127,7 @@ class WidgetServices(
             "media" -> media.updates()
             "notifications" -> notifications.updates()
             "volume" -> volume.updates()
+            "vpet" -> vpet.updates
             "battery" ->
                 callbackFlow {
                     val receiver =
@@ -283,6 +287,7 @@ class WidgetServices(
             "launcher" -> launcherAction?.invoke(arg)
             "media" -> media.control(arg)
             "volume" -> volume.control(args[0])
+            "vpet" -> vpet.control(arg)
             "notification" -> args.getOrNull(1)?.takeIf { it != Null }?.let { notifications.control(arg, it.toString()) }
             "androidApp" -> context.packageManager.getLaunchIntentForPackage(arg)?.let { context.startActivity(it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
             "copy" -> copy(arg)

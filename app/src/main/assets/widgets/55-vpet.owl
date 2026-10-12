@@ -1,0 +1,81 @@
+widget "digivice" {
+  page: 2
+  order: 1
+  size: 6x4
+  minSize: 4x3
+  meta {
+    owl: 6
+    description: "Your real V-pet emulator, drawn in the current launcher theme. Live LCD, menu indicators and A/B/C controls. Requires the V-pet OWL update."
+    version: "1.0"
+    license: "MIT"
+    category: "games"
+  }
+
+  source pet = android.vpet
+
+  component Display(frame) {
+    Canvas {
+      fill: true
+      onTap: screen()
+      let w = frame.width ?? 32
+      let h = frame.height ?? 24
+      let pixel = max(1, floor(min((width - 24) / w, (height - 16) / h)))
+      let x = floor((width - w * pixel) / 2)
+      let y = floor((height - h * pixel) / 2)
+      rect(0, 0, width, height, fill: surface, radius: 8)
+      sprite(frame.rows ?? [], x, y, pixel, palette: {p: foreground, i: accent, d: alpha(muted, 0.3)})
+    }
+  }
+
+  component Controls() {
+    Row {
+      gap: 8
+      fill: width
+      Button { text: "A"; weight: 1; onTap: vpet("a") }
+      Button { text: "B"; weight: 1; onTap: vpet("b") }
+      Button { text: "C"; weight: 1; onTap: vpet("c") }
+    }
+  }
+
+  Column {
+    gap: 8
+    fill: true
+    Row {
+      Text { text: "DIGIVICE"; style: label; color: accent; weight: 1 }
+      Text { text: pet.ready ? (pet.frozen ? "sleeping" : "● live") : "offline"; style: small; color: pet.ready ? accent : muted }
+    }
+    if pet.ready {
+      Display { frame: pet; weight: 1; fill: width }
+      if !pet.frozen { Controls {} }
+      else { Text { text: "DND · controls paused"; style: small; color: muted } }
+    } else {
+      Text { text: pet.status ?? "Connecting to V-pet…"; style: small; weight: 1; color: muted }
+      Row {
+        gap: 8
+        Button { text: "open V-pet"; weight: 1; onTap: androidApp("com.digimon.glyph") }
+        Button { text: "get update"; weight: 1; onTap: url("https://github.com/uzugu/V-pet-Glyph-Matrix/releases") }
+      }
+    }
+  }
+
+  screen {
+    title: "digivice"
+    Column {
+      gap: 12
+      fill: true
+      Row {
+        Text { text: "DIGIVICE"; style: title; color: accent; weight: 1 }
+        Button { text: "settings"; onTap: androidApp("com.digimon.glyph") }
+      }
+      if pet.ready {
+        Display { frame: pet; weight: 1; fill: width }
+        if !pet.frozen { Controls {} }
+        else { Text { text: "DND · controls paused"; color: muted } }
+      } else {
+        Text { text: pet.status ?? "Connecting to V-pet…"; color: muted; weight: 1 }
+        Button { text: "open V-pet"; onTap: androidApp("com.digimon.glyph") }
+      }
+      Button { text: "close"; onTap: close() }
+    }
+  }
+}

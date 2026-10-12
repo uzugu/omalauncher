@@ -77,7 +77,7 @@ that read it redraw. Properties are separated by newlines or `;`.
 | `asset logo = base64"iVBOR..."` | an embedded image (under 2 MB) for `Image { src: logo }`, so the widget is one self-contained file |
 | `requires { pacman: ["jq", "curl"] }` | packages the widget's commands need; see Dependencies |
 | `meta { description: "..."; version: "1.0"; license: "MIT"; category: "news" }` | needed to publish to the widget store (see Sharing) |
-| `meta { owl: 5 }` | the language version the widget needs (this launcher has 5; the default is 1). Older launchers say "update the launcher" instead of failing on what they don't know. `Terminal` needs 2, `sprite` 3, triggers, `file`, `Slider`, `Input`, `android.notifications`, `android.volume`, `volume` and `notification` need 4, and `screen { }`, `screen()`, `close()`, `screenWidth` and `screenHeight` need 5; using them without declaring it is an error |
+| `meta { owl: 6 }` | the language version the widget needs (this launcher has 6; the default is 1). Older launchers say "update the launcher" instead of failing on what they don't know. `Terminal` needs 2, `sprite` 3, triggers, `file`, `Slider`, `Input`, `android.notifications`, `android.volume`, `volume` and `notification` need 4, `screen { }`, `screen()`, `close()`, `screenWidth` and `screenHeight` need 5, and `android.vpet` and `vpet()` need 6; using them without declaring it is an error |
 | `onTap: ...` | runs when the tile (not a button inside it) is tapped |
 | `screen { ... }` | a full-screen view of the widget, opened with `screen()`; see Screens (owl 5) |
 | `every 10s { ... }`, `at t { ... }`, `when c { ... }`, `on x { ... }` | statements that run without a tap; see Triggers |
@@ -494,3 +494,27 @@ and the message goes to `.errors/`.
   `88-notes` (Input), `98-notifications` (android.notifications), `99-volume` (Slider),
   and next to it `10-today` (a weather screen behind the tile), `20-fetch` (fastfetch as a dashboard), `45-terminal` (a live terminal) and
   `60-owl` (sprites).
+
+## Live V-pet widgets (OWL 6)
+
+`source pet = android.vpet` receives live LCD frames from the installed
+`com.digimon.glyph` V-pet app through a local Android service. Install its OWL
+bridge update first and load your ROM in that app. No Linux or network is needed.
+The emulator, ROM and saves remain in V-pet; the launcher receives only pixels
+and connection state. Frames follow the emulator's selected timing mode (normally
+15 FPS, up to 30 FPS); power-save mode deliberately produces fewer frames.
+
+The value is `{available, ready, frozen, status, width, height, rows}`. `rows` is
+pixel art for `sprite()`: `p` is a lit LCD pixel, `i` an active menu indicator,
+`d` an inactive indicator, and `.` is transparent. Use a theme palette such as
+`{p: foreground, i: accent, d: alpha(muted, 0.3)}`. Draw rows directly rather than
+replacing the widget with a pre-rendered screenshot. See `55-vpet.owl` for the
+bundled tile, A/B/C controls and full-screen view.
+
+`vpet("a")`, `vpet("b")` and `vpet("c")` send one button press to the emulator.
+Show controls only when `pet.ready && !pet.frozen`. DND freezes are enforced by
+the V-pet app too. Opening the app uses `androidApp("com.digimon.glyph")`.
+
+All widgets share one connection. Listening stops when no active widget needs
+it. A slow receiver skips old frames instead of building a backlog; commands
+are never retried. Old or missing app versions show an update message.
