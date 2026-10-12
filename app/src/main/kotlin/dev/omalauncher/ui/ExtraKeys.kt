@@ -4,6 +4,7 @@ import android.view.HapticFeedbackConstants
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
@@ -36,6 +38,13 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupPositionProvider
+import androidx.compose.ui.window.PopupProperties
 import dev.omalauncher.wayland.Keys
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
@@ -54,6 +63,10 @@ private val Gap = 6.dp
 val ExtraKeysHeight = RowHeight * 2 + (FrameWidth + KeyGap) * 2 + Gap
 
 private sealed interface ExtraKey
+private data object FunctionMenu : ExtraKey
+
+// Linux evdev places F11 and F12 separately from F1–F10.
+private val FunctionKeys = (59..68).toList() + listOf(87, 88)
 
 /** A key that sends [code], with [held] down around it; drawn as [label], or as a chevron turned [arrow] degrees from up. */
 private data class Plain(
@@ -77,7 +90,7 @@ private val Layout: List<List<ExtraKey>> =
             Plain("-", Keys.KEY_MINUS),
             Plain("home", Keys.KEY_HOME),
             Plain("up", Keys.KEY_UP, repeats = true, arrow = 0f),
-            Plain("end", Keys.KEY_END),
+            FunctionMenu,
             Plain("pgup", Keys.KEY_PAGEUP, repeats = true),
             // Ctrl+Insert and Shift+Insert: the clipboard keys foot, GTK and Qt all know.
             Plain("copy", Keys.KEY_INSERT, held = Keys.KEY_LEFTCTRL),
@@ -134,6 +147,7 @@ fun ExtraKeys(
                     when (key) {
                         is Plain -> PlainKey(key, bridge, cap)
                         is Sticky -> StickyKey(key, key.modifier(bridge), cap)
+                        FunctionMenu -> FunctionMenuKey(bridge, cap)
                     }
                 }
             }
@@ -142,10 +156,67 @@ fun ExtraKeys(
 }
 
 @Composable
+private fun FunctionMenuKey(bridge: KeyboardBridge, modifier: Modifier) {
+    var expanded by remember { mutableStateOf(false) }
+    val view = LocalView.current
+    Box(modifier) {
+        KeyCap(
+            Modifier.fillMaxWidth().fillMaxHeight().clickable {
+                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                expanded = !expanded
+            },
+            fill = if (expanded) Palette.accent else Palette.surface,
+        ) {
+            BasicText("F", style = Mono.copy(color = if (expanded) Palette.background else Palette.foreground))
+        }
+        if (expanded) {
+            Popup(
+                popupPositionProvider = AboveFunctionKey,
+                onDismissRequest = { expanded = false },
+                // Keep the terminal focused and its soft keyboard open.
+                properties = PopupProperties(focusable = false),
+            ) {
+                Column(
+                    Modifier.width(288.dp)
+                        .frame(FrameWidth, Palette.border, Palette.background, radius = 12.dp)
+                        .padding(KeyGap),
+                ) {
+                    for (row in FunctionKeys.withIndex().chunked(4)) {
+                        Row(Modifier.fillMaxWidth().height(48.dp)) {
+                            for ((index, code) in row) {
+                                PlainKey(
+                                    Plain("F${index + 1}", code),
+                                    bridge,
+                                    Modifier.weight(1f).fillMaxHeight().padding(KeyGap),
+                                    onTapped = { expanded = false },
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+private object AboveFunctionKey : PopupPositionProvider {
+    override fun calculatePosition(
+        anchorBounds: IntRect,
+        windowSize: IntSize,
+        layoutDirection: LayoutDirection,
+        popupContentSize: IntSize,
+    ) = IntOffset(
+        anchorBounds.left.coerceAtMost(windowSize.width - popupContentSize.width).coerceAtLeast(0),
+        (anchorBounds.top - popupContentSize.height).coerceAtLeast(0),
+    )
+}
+
+@Composable
 private fun PlainKey(
     key: Plain,
     bridge: KeyboardBridge,
     modifier: Modifier,
+    onTapped: () -> Unit = {},
 ) {
     val view = LocalView.current
     var pressed by remember { mutableStateOf(false) }
@@ -157,6 +228,7 @@ private fun PlainKey(
                 val press =
                     scope.launch {
                         bridge.tap(key.code, key.held)
+                        onTapped()
                         if (!key.repeats) return@launch
                         delay(RepeatDelay)
                         while (true) {

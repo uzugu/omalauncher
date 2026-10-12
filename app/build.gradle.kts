@@ -17,8 +17,8 @@ android {
         applicationId = "dev.omalauncher.hermes"
         minSdk = 29
         targetSdk = 37
-        versionCode = 10
-        versionName = "0.4.0-hermes.3"
+        versionCode = 11
+        versionName = "0.4.0-hermes.4"
         ndk { abiFilters += "arm64-v8a" }
     }
 
