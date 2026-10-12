@@ -34,13 +34,7 @@ class Vpet(private val context: Context, scope: CoroutineScope) {
         var bound = false
         lateinit var connection: ServiceConnection
         lateinit var connect: Runnable
-        val handshakeTimeout = Runnable {
-            if (!closed) {
-                remote = null
-                current = VpetFrame.unavailable("Update V-pet to enable the OWL bridge")
-                trySend(current)
-            }
-        }
+        lateinit var handshakeTimeout: Runnable
 
         fun emit(value: Value) {
             current = value
@@ -109,13 +103,20 @@ class Vpet(private val context: Context, scope: CoroutineScope) {
             if (closed) return@Runnable
             emit(VpetFrame.unavailable("Connecting to V-pet…"))
             try {
+                val installed = context.packageManager.getPackageInfo(PACKAGE, 0)
+                if (installed.longVersionCode < 4) {
+                    retry("Update V-pet to enable the OWL bridge")
+                    return@Runnable
+                }
                 bound = context.bindService(
                     Intent(ACTION_BIND).setComponent(ComponentName(PACKAGE, SERVICE)),
                     connection, Context.BIND_AUTO_CREATE,
                 )
                 if (!bound) retry("Install the V-pet OWL update")
-            } catch (_: SecurityException) { retry("V-pet connection unavailable") }
+            } catch (_: android.content.pm.PackageManager.NameNotFoundException) { retry("Install the V-pet OWL update") }
+            catch (_: SecurityException) { retry("V-pet connection unavailable") }
         }
+        handshakeTimeout = Runnable { if (!closed) retry("Update V-pet to enable the OWL bridge") }
         connect.run()
         awaitClose {
             closed = true
